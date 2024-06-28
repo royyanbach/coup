@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig({
-  base: command === 'build' ? '/coup/' : '/',
-  plugins: [react()],
-})
+export default defineConfig(({ command, mode }) => {
+  return {
+    base: command === 'build' ? '/coup/' : '/',
+    plugins: [react()],
+  }
+});
