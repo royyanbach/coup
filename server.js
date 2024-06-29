@@ -21,6 +21,7 @@ app.use(cors({
 }));
 
 const clients = {};
+const rooms = {};
 
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
@@ -59,19 +60,54 @@ io.on('connection', (socket) => {
     io.to(data.target).emit('candidate', { candidate: data.candidate, sender: socket.id });
   });
 
+  socket.on('createRoom', (roomCode) => {
+    if (!rooms[roomCode]) {
+      rooms[roomCode] = [];
+    }
+    rooms[roomCode].push(socket.id);
+    socket.join(roomCode);
+    io.to(socket.id).emit('roomCreated', roomCode);
+    console.log(`Room ${roomCode} created by ${socket.id}`);
+  });
+
+  socket.on('joinRoom', (roomCode) => {
+    if (rooms[roomCode]) {
+      rooms[roomCode].push(socket.id);
+      socket.join(roomCode);
+      io.to(socket.id).emit('roomJoined', roomCode);
+      console.log(`${socket.id} joined room ${roomCode}`);
+
+      // Notify existing members in the room
+      socket.to(roomCode).emit('newMember', socket.id);
+      rooms[roomCode].forEach(member => {
+        if (member !== socket.id) {
+          io.to(socket.id).emit('newMember', member);
+        }
+      });
+    } else {
+      io.to(socket.id).emit('error', 'Room does not exist');
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
     const client = clients[socket.id];
     if (client) {
-      const subnet = client.subnet;
       delete clients[socket.id];
-      const sameSubnetClients = Object.values(clients).filter(client => client.subnet === subnet);
-      const userIdsInSameSubnet = sameSubnetClients.map(client => client.socketId);
 
-      userIdsInSameSubnet.forEach(id => {
-        io.to(id).emit('updateUserList', userIdsInSameSubnet.filter(userId => userId !== id));
-        io.to(id).emit('userDisconnected', socket.id);
-      });
+      // Remove the user from all rooms they were part of
+      for (const roomCode in rooms) {
+        const index = rooms[roomCode].indexOf(socket.id);
+        if (index !== -1) {
+          rooms[roomCode].splice(index, 1);
+          // Notify other users in the room about the disconnection
+          socket.to(roomCode).emit('userDisconnected', socket.id);
+        }
+        // If the room is empty, delete it
+        if (rooms[roomCode].length === 0) {
+          delete rooms[roomCode];
+        }
+      }
     }
   });
 

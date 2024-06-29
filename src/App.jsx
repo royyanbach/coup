@@ -18,10 +18,21 @@ const dataChannels = {};
 
 const App = () => {
   const [mySocketId, setMySocketId] = useState('');
+  const [roomCode, setRoomCode] = useState('');
+  const [isInRoom, setIsInRoom] = useState(false);
   const [userList, setUserList] = useState([]);
   const [connectedUsers, setConnectedUsers] = useState([]);
   const [message, setMessage] = useState('');
   const [receivedMessages, setReceivedMessages] = useState([]);
+
+  const createRoom = () => {
+    const code = Math.random().toString(36).substring(2, 10);
+    socket.emit('createRoom', code);
+  };
+
+  const joinRoom = (code) => {
+    socket.emit('joinRoom', code);
+  };
 
   useEffect(() => {
     socket.emit('register');
@@ -29,6 +40,25 @@ const App = () => {
     socket.on('connect', () => {
       setMySocketId(socket.id);
       console.log('Connected with socket ID:', socket.id);
+    });
+
+    socket.on('roomCreated', (code) => {
+      setRoomCode(code);
+      setIsInRoom(true);
+      console.log(`Room created: ${code}`);
+    });
+
+    socket.on('roomJoined', (code) => {
+      setRoomCode(code);
+      setIsInRoom(true);
+      console.log(`Joined room: ${code}`);
+    });
+
+    socket.on('newMember', (newMemberId) => {
+      console.log('New member joined:', newMemberId);
+      setTimeout(() => {
+        connectUser(newMemberId);
+      }, 500);
     });
 
     socket.on('updateUserList', (users) => {
@@ -56,26 +86,10 @@ const App = () => {
       await peerConnections[data.sender].addIceCandidate(candidate);
     });
 
-    return () => {
-      socket.off('connect');
-      socket.off('offer');
-      socket.off('answer');
-      socket.off('candidate');
-      socket.off('updateUserList');
-    };
-  }, [connectedUsers]);
-
-  useEffect(() => {
     socket.on('updateUserListRequest', () => {
       socket.emit('register'); // Re-fetch the user list from the server
     });
 
-    return () => {
-      socket.off('updateUserListRequest');
-    };
-  }, []);
-
-  useEffect(() => {
     socket.on('userDisconnected', (disconnectedUserId) => {
       setConnectedUsers(prev => prev.filter(id => id !== disconnectedUserId));
       setUserList(prev => prev.includes(disconnectedUserId) ? prev : [...prev, disconnectedUserId]);
@@ -84,9 +98,18 @@ const App = () => {
     });
 
     return () => {
+      socket.off('connect');
+      socket.off('roomCreated');
+      socket.off('roomJoined');
+      socket.off('newMember');
+      socket.off('offer');
+      socket.off('answer');
+      socket.off('candidate');
+      socket.off('updateUserList');
+      socket.off('updateUserListRequest');
       socket.off('userDisconnected');
     };
-  }, []);
+  }, [connectedUsers]);
 
   const createPeerConnection = (socketId) => {
     const peerConnection = new RTCPeerConnection(configuration);
@@ -160,6 +183,21 @@ const App = () => {
     <div>
       <h1>WebRTC Game</h1>
       <p>Your Socket ID: {mySocketId}</p>
+      {!isInRoom && (
+        <div>
+          <button onClick={createRoom}>Create Room</button>
+          <input
+            type="text"
+            placeholder="Enter Room Code"
+            value={roomCode}
+            onChange={(e) => setRoomCode(e.target.value)}
+          />
+          <button onClick={() => joinRoom(roomCode)}>Join Room</button>
+        </div>
+      )}
+      {isInRoom && (
+        <h2>Room Code: {roomCode}</h2>
+      )}
       <h2>Available Users</h2>
       <ul>
         {userList.map(userId => (
