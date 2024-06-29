@@ -1,14 +1,15 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
-const ip = require('ip'); // To manage IP addresses
+const ip = require('ip');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:5173", // The frontend origin
+    origin: process.env.CLIENT_URL,
     methods: ["GET", "POST"],
     allowedHeaders: ["my-custom-header"],
     credentials: true
@@ -16,7 +17,7 @@ const io = socketIo(server, {
 });
 
 app.use(cors({
-  origin: "http://localhost:5173", // The frontend origin
+  origin: process.env.CLIENT_URL,
 }));
 
 const clients = {};
@@ -25,7 +26,7 @@ io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
 
   // Get the client's IP from the headers set by Cloudflare
-  const clientIp = socket.handshake.headers['cf-connecting-ip'] || socket.handshake.address;
+  const clientIp = socket.handshake.headers['cf-connecting-ip'] || socket.handshake.address || process.env.DEFAULT_IP;
   console.log(`Client IP: ${clientIp}`);
 
   const subnet = ip.subnet(clientIp, '255.255.255.0'); // Assuming a /24 subnet

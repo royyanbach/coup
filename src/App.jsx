@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 
-const socket = io('http://localhost:3000'); // Adjust to your server URL
+const socket = io(import.meta.env.VITE_SERVER_URL);
 
 const configuration = {
   iceServers: [
