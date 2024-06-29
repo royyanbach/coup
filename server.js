@@ -26,7 +26,7 @@ io.on('connection', (socket) => {
   console.log('New client connected:', socket.id);
 
   // Get the client's IP from the headers set by Cloudflare
-  const clientIp = socket.handshake.headers['cf-connecting-ip'] || socket.handshake.address || process.env.DEFAULT_IP;
+  const clientIp = socket.handshake.headers['cf-connecting-ip'] || process.env.FALLBACK_CLIENT_IP;
   console.log(`Client IP: ${clientIp}`);
 
   const subnet = ip.subnet(clientIp, '255.255.255.0'); // Assuming a /24 subnet

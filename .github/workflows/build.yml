@@ -27,13 +27,13 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
+      - name: Append commit hash to index.html
+        run: 'echo "console.log(${{ github.sha }})" >> index.jsx'
+
+      - run: cat index.jsx
+
       - name: Build project
         run: yarn build
-
-      - name: Append commit hash to index.html
-        run: 'echo "<!-- Latest commit hash: ${{ github.sha }} -->" >> dist/index.html'
-
-      - run: cat dist/index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
