@@ -31,7 +31,7 @@ jobs:
         run: yarn build
 
       - name: Append commit hash to index.html
-        run: 'echo "<!-- Latest commit hash: ${{ github.sha }} -->" >> index.html'
+        run: 'echo "<!-- Latest commit hash: ${{ github.sha }} -->" >> dist/index.html'
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
