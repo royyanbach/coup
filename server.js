@@ -39,6 +39,14 @@ io.on('connection', (socket) => {
     io.to(id).emit('updateUserList', userIdsInSameSubnet.filter(userId => userId !== id));
   });
 
+  socket.on('updateUserListRequest', () => {
+    const sameSubnetClients = Object.values(clients).filter(client => client.subnet === clients[socket.id].subnet);
+    const userIdsInSameSubnet = sameSubnetClients.map(client => client.socketId);
+    userIdsInSameSubnet.forEach(id => {
+      io.to(id).emit('updateUserList', userIdsInSameSubnet.filter(userId => userId !== id));
+    });
+  });
+
   socket.on('offer', (data) => {
     io.to(data.target).emit('offer', { offer: data.offer, sender: socket.id });
   });
@@ -62,9 +70,11 @@ io.on('connection', (socket) => {
 
       userIdsInSameSubnet.forEach(id => {
         io.to(id).emit('updateUserList', userIdsInSameSubnet.filter(userId => userId !== id));
+        io.to(id).emit('userDisconnected', socket.id);
       });
     }
   });
+
 });
 
 server.listen(3000, () => console.log('Signaling server running on port 3000'));
