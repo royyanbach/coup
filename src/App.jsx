@@ -1,9 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 
-const socket = io('https://playground.royyanba.ch', {
-  path: '/coup/socket.io'
-});
+const socket = io('http://localhost:3000'); // Adjust to your server URL
 
 const configuration = {
   iceServers: [
@@ -23,11 +21,18 @@ const App = () => {
   const remoteStreamsRef = useRef([]);
   const [remoteStreams, setRemoteStreams] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [userList, setUserList] = useState([]);
 
   useEffect(() => {
+    socket.emit('register');
+
     socket.on('connect', () => {
       setMySocketId(socket.id);
       console.log('Connected with socket ID:', socket.id);
+    });
+
+    socket.on('updateUserList', (users) => {
+      setUserList(users.filter(id => id !== socket.id));
     });
 
     socket.on('offer', async (data) => {
@@ -63,6 +68,7 @@ const App = () => {
       socket.off('offer');
       socket.off('answer');
       socket.off('candidate');
+      socket.off('updateUserList');
     };
   }, []);
 
@@ -89,16 +95,11 @@ const App = () => {
     peerConnections[socketId] = peerConnection;
   };
 
-  const callUser = async () => {
-    if (!targetSocketId) {
-      alert('Please enter the target socket ID.');
-      return;
-    }
-
-    createPeerConnection(targetSocketId);
-    const offer = await peerConnections[targetSocketId].createOffer();
-    await peerConnections[targetSocketId].setLocalDescription(offer);
-    socket.emit('offer', { offer, target: targetSocketId });
+  const callUser = async (targetId) => {
+    createPeerConnection(targetId);
+    const offer = await peerConnections[targetId].createOffer();
+    await peerConnections[targetId].setLocalDescription(offer);
+    socket.emit('offer', { offer, target: targetId });
   };
 
   return (
@@ -111,13 +112,15 @@ const App = () => {
       ))}
       {isConnected && (
         <div>
-          <input
-            type="text"
-            placeholder="Enter target socket ID"
-            value={targetSocketId}
-            onChange={(e) => setTargetSocketId(e.target.value)}
-          />
-          <button onClick={callUser}>Call User</button>
+          <h2>Available Users:</h2>
+          <ul>
+            {userList.map(userId => (
+              <li key={userId}>
+                {userId}
+                <button onClick={() => callUser(userId)}>Call</button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
