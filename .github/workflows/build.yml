@@ -33,6 +33,9 @@ jobs:
       - run: cat index.jsx
 
       - name: Build project
+        env:
+          VITE_SERVER_HOST: ${{ secrets.VITE_SERVER_HOST }}
+          VITE_SERVER_PATH: ${{ secrets.VITE_SERVER_PATH }}
         run: yarn build
 
       - name: Upload artifact
