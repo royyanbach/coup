@@ -28,7 +28,7 @@ jobs:
         run: yarn install
 
       - name: Append commit hash to index.html
-        run: 'echo "console.log(${{ github.sha }})" >> index.jsx'
+        run: 'echo "console.log(\"${{ github.sha }}\")" >> index.jsx'
 
       - run: cat index.jsx
 
