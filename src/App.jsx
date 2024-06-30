@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import io from 'socket.io-client';
-import Header from './Header';
-import Welcome from './Welcome';
-import Board from './Board';
+import Header from './components/Header';
+import Welcome from './components/Welcome';
+import Board from './components/Board';
+import usePlayerProfile from './hooks/usePlayerProfile';
+import { EVENT_NAME } from './constants';
 
 const socket = io(import.meta.env.VITE_SERVER_HOST, {
   path: import.meta.env.VITE_SERVER_PATH,
@@ -24,9 +26,23 @@ const App = () => {
   const [roomCode, setRoomCode] = useState('');
   const [isInRoom, setIsInRoom] = useState(false);
   const [userList, setUserList] = useState([]);
-  const [connectedUsers, setConnectedUsers] = useState([]);
   const [message, setMessage] = useState('');
   const [receivedMessages, setReceivedMessages] = useState([]);
+
+  const prependMessage = (message) => {
+    setReceivedMessages(prev => [message, ...prev]);
+  };
+
+  const {
+    addConnectedUser,
+    connectedUsers,
+    removeConnectedUser,
+    setMyProfileIcon,
+    updateUser,
+  } = usePlayerProfile({
+    dataChannels,
+    mySocketId,
+  });
 
   const createRoom = () => {
     const code = Math.random().toString(36).substring(2, 10);
@@ -35,6 +51,22 @@ const App = () => {
 
   const joinRoom = (code) => {
     socket.emit('joinRoom', code);
+  };
+
+  const handleNewMessage = (message) => {
+    try {
+      const parsedMessage = JSON.parse(message);
+      switch (parsedMessage.eventType) {
+        case EVENT_NAME.UPDATE_USER:
+          updateUser(parsedMessage.payload);
+          break;
+        default:
+          console.log('Unknown event type:', parsedMessage.eventType);
+          break;
+      }
+    } catch (error) {
+      console.error('Failed to parse message:', error);
+    }
   };
 
   useEffect(() => {
@@ -48,17 +80,26 @@ const App = () => {
     socket.on('roomCreated', (code) => {
       setRoomCode(code);
       setIsInRoom(true);
-      console.log(`Room created: ${code}`);
+      prependMessage({
+        eventType: EVENT_NAME.CREATE_ROOM,
+        actor: socket.id,
+      });
     });
 
     socket.on('roomJoined', (code) => {
       setRoomCode(code);
       setIsInRoom(true);
-      console.log(`Joined room: ${code}`);
+      prependMessage({
+        eventType: EVENT_NAME.JOIN_ROOM,
+        actor: socket.id,
+      });
     });
 
     socket.on('newMember', (newMemberId) => {
-      console.log('New member joined:', newMemberId);
+      prependMessage({
+        eventType: EVENT_NAME.PLAYER_JOINED,
+        actor: newMemberId,
+      });
       setTimeout(() => {
         connectUser(newMemberId);
       }, 500);
@@ -94,7 +135,7 @@ const App = () => {
     });
 
     socket.on('userDisconnected', (disconnectedUserId) => {
-      setConnectedUsers(prev => prev.filter(id => id !== disconnectedUserId));
+      removeConnectedUser(disconnectedUserId);
       setUserList(prev => prev.includes(disconnectedUserId) ? prev : [...prev, disconnectedUserId]);
       delete peerConnections[disconnectedUserId];
       delete dataChannels[disconnectedUserId];
@@ -135,12 +176,13 @@ const App = () => {
     peerConnections[socketId] = peerConnection;
 
     // Add to connected users list
-    setConnectedUsers(prev => [...prev, socketId]);
+    addConnectedUser(socketId);
   };
 
   const setupDataChannel = (channel, socketId) => {
     channel.onmessage = (event) => {
-      setReceivedMessages(prev => [...prev, event.data]);
+      handleNewMessage(event.data);
+      // setReceivedMessages(prev => [...prev, event.data]);
     };
 
     channel.onopen = () => {
@@ -150,7 +192,7 @@ const App = () => {
     channel.onclose = () => {
       console.log('Data channel is closed');
       // Remove from connected users list
-      setConnectedUsers(prev => prev.filter(id => id !== socketId));
+      removeConnectedUser(socketId);
       // Add back to user list if still available
       setUserList(prev => prev.includes(socketId) ? prev : [...prev, socketId]);
       // Remove peer connection and data channel
@@ -172,22 +214,26 @@ const App = () => {
     }
   };
 
-
-  const sendMessage = () => {
-    connectedUsers.forEach(targetId => {
-      if (dataChannels[targetId]) {
-        dataChannels[targetId].send(message);
-      }
-    });
-    setMessage('');
-  };
-
   return (
     <div className="h-full bg-[url('splash-bg.jpg')] bg-no-repeat bg-center bg-cover">
       <div className='flex flex-col gap-10 justify-center items-center h-screen bg-gray-900 bg-opacity-40'>
         <Header roomCode={roomCode} />
-        {/* <Welcome /> */}
-        <Board />
+        {!isInRoom && (
+          <Welcome onCreateRoom={createRoom} onJoinRoom={joinRoom} />
+        )}
+        {isInRoom && (
+          <Board
+            activities={receivedMessages}
+            connectedUsers={connectedUsers}
+            onChangePlayerIcon={setMyProfileIcon}
+            mySocketId={mySocketId}
+          />
+        )}
+        {/* <Board
+          connectedUsers={connectedUsers}
+          onChangePlayerIcon={setMyProfileIcon}
+          mySocketId={mySocketId}
+        /> */}
       </div>
       <div className='hidden'>
         <p>Your Socket ID: {mySocketId}</p>
@@ -226,15 +272,15 @@ const App = () => {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
-          <button onClick={sendMessage}>Send Message</button>
+          <button onClick={() => broadCastMessageToAllUsers(message)}>Send Message</button>
         </div>
 
-        <div>
+        {/* <div>
           <h2>Received Messages</h2>
           {receivedMessages.map((msg, index) => (
             <p key={index}>{msg}</p>
           ))}
-        </div>
+        </div> */}
       </div>
     </div>
   );
