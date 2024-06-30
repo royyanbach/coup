@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #app {
+  height: 100%;
+}
+
+* {
+  font-family: "Averia Serif Libre", serif;
+}
+
+.main {
+  background: #0F2027;  /* fallback for old browsers */
+  background: -webkit-linear-gradient(to left, rgba(44, 83, 100, .1), rgba(32, 58, 67, .1), rgba(15, 32, 39, .1));
+  background: linear-gradient(to left, rgba(44, 83, 100, .1), rgba(32, 58, 67, .1), rgba(15, 32, 39, .1));
+}

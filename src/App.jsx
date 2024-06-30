@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import io from 'socket.io-client';
+import Header from './Header';
+import Welcome from './Welcome';
+import Board from './Board';
 
 const socket = io(import.meta.env.VITE_SERVER_HOST, {
   path: import.meta.env.VITE_SERVER_PATH,
@@ -180,52 +183,58 @@ const App = () => {
   };
 
   return (
-    <div>
-      <h1>WebRTC Game</h1>
-      <p>Your Socket ID: {mySocketId}</p>
-      {!isInRoom && (
+    <div className="h-full bg-[url('splash-bg.jpg')] bg-no-repeat bg-center bg-cover">
+      <div className='flex flex-col gap-10 justify-center items-center h-screen bg-gray-900 bg-opacity-40'>
+        <Header roomCode={roomCode} />
+        {/* <Welcome /> */}
+        <Board />
+      </div>
+      <div className='hidden'>
+        <p>Your Socket ID: {mySocketId}</p>
+        {!isInRoom && (
+          <div>
+            <button onClick={createRoom}>Create Room</button>
+            <input
+              type="text"
+              placeholder="Enter Room Code"
+              value={roomCode}
+              onChange={(e) => setRoomCode(e.target.value)}
+            />
+            <button onClick={() => joinRoom(roomCode)}>Join Room</button>
+          </div>
+        )}
+
+        {/* <h2>Available Users</h2>
+        <ul>
+          {userList.map(userId => (
+            <li key={userId}>
+              <span>{userId}</span>
+              <button onClick={() => connectUser(userId)}>Connect</button>
+            </li>
+          ))}
+        </ul>
+        <h2>Connected Users</h2>
+        <ul>
+          {connectedUsers.map(userId => (
+            <li key={userId}>{userId}</li>
+          ))}
+        </ul> */}
+
         <div>
-          <button onClick={createRoom}>Create Room</button>
           <input
             type="text"
-            placeholder="Enter Room Code"
-            value={roomCode}
-            onChange={(e) => setRoomCode(e.target.value)}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
           />
-          <button onClick={() => joinRoom(roomCode)}>Join Room</button>
+          <button onClick={sendMessage}>Send Message</button>
         </div>
-      )}
-      {isInRoom && (
-        <h2>Room Code: {roomCode}</h2>
-      )}
-      <h2>Available Users</h2>
-      <ul>
-        {userList.map(userId => (
-          <li key={userId}>
-            <span>{userId}</span>
-            <button onClick={() => connectUser(userId)}>Connect</button>
-          </li>
-        ))}
-      </ul>
-      <h2>Connected Users</h2>
-      <ul>
-        {connectedUsers.map(userId => (
-          <li key={userId}>{userId}</li>
-        ))}
-      </ul>
-      <div>
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-        />
-        <button onClick={sendMessage}>Send Message</button>
-      </div>
-      <div>
-        <h2>Received Messages</h2>
-        {receivedMessages.map((msg, index) => (
-          <p key={index}>{msg}</p>
-        ))}
+
+        <div>
+          <h2>Received Messages</h2>
+          {receivedMessages.map((msg, index) => (
+            <p key={index}>{msg}</p>
+          ))}
+        </div>
       </div>
     </div>
   );
