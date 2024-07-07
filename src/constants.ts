@@ -46,12 +46,12 @@ export type PlayerJoinedEvent = {
 
 export type PlayerLeftEvent = {
   eventType: typeof ROOM_EVENTS.PLAYER_LEFT;
-  user: Partial<User>;
+  user: Partial<User> & Pick<User, 'id'>;
 };
 
 export type UserUpdatedEvent = {
   eventType: typeof ROOM_EVENTS.USER_UPDATED;
-  user: Partial<User>;
+  user: Partial<User> & Pick<User, 'id'>;
 };
 
 export type RoomEvent = RoomCreatedEvent

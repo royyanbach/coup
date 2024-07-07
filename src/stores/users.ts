@@ -9,16 +9,19 @@ export type User = {
 };
 
 type State = {
+  currentUserId: string;
   users: User[];
 }
 
 type Actions = {
   addUsers: (users: User[]) => void;
   removeUser: (userId: string) => void;
+  setCurrentUserId: (userId: string) => void;
   updateUser: (userData: Partial<User>) => void;
 }
 
-const usersStore = create<State & Actions>()(immer((set) => ({
+const useUserStore = create<State & Actions>()(immer((set) => ({
+  currentUserId: '',
   users: [],
   addUsers: (users) => {
     set((state) => {
@@ -28,6 +31,11 @@ const usersStore = create<State & Actions>()(immer((set) => ({
   removeUser: (userId) => {
     set((state) => {
       state.users = state.users.filter(user => user.id !== userId);
+    });
+  },
+  setCurrentUserId: (userId) => {
+    set((state) => {
+      state.currentUserId = userId;
     });
   },
   updateUser: (userData) => {
@@ -40,4 +48,4 @@ const usersStore = create<State & Actions>()(immer((set) => ({
   },
 })));
 
-export default usersStore;
+export default useUserStore;

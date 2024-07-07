@@ -1,100 +1,25 @@
 import { useMemo, useState } from "react";
 import classnames from "classnames";
 import { ROOM_EVENTS, PLAYER_ICONS, PlayerIcon, RoomEvent } from "../constants";
-import { User } from "src/stores/users";
+import PlayerOverview from "./PlayerOverview";
+import ActivitiesOverview from "./ActivitiesOverview";
 
 type BoardProps = {
-  activities: RoomEvent[];
-  users: User[];
   onGameStart?: () => void;
   onChangePlayerIcon?: (icon: PlayerIcon) => void;
-  mySocketId?: string;
 };
 
 const Board = ({
-  activities = [],
-  users = [],
   onGameStart = () => {},
   onChangePlayerIcon = () => {},
-  mySocketId = '',
 }: BoardProps) => {
   const [isGameStarted, setIsGameStarted] = useState(false);
-  const [isCharacterHidden, setIsCharacterHidden] = useState(true);
-  const myProfile = useMemo(() => users.find(u => u.id === mySocketId), [users, mySocketId]);
-  const otherPlayers = useMemo(() => users.filter(u => u.id !== mySocketId), [users, mySocketId]);
-
-  const getUserProfileIcon = (userId?: string) => {
-    const iconKey = users.find(u => u.id === userId)?.profileIcon;
-    if (iconKey) {
-      return PLAYER_ICONS[iconKey];
-    }
-  }
-
-  const formatActivity = (activity: RoomEvent) => {
-    let profileIcon;
-    switch (activity.eventType) {
-      case ROOM_EVENTS.ROOM_CREATED:
-        profileIcon = getUserProfileIcon(activity.users[0].id);
-        return profileIcon ? `${profileIcon} created a new game` : null;
-      case ROOM_EVENTS.ROOM_JOINED:
-        profileIcon = getUserProfileIcon(myProfile?.id);
-        return profileIcon ? `${profileIcon} joined the game` : null;
-      case ROOM_EVENTS.PLAYER_JOINED:
-        profileIcon = getUserProfileIcon(activity.user.id);
-        return profileIcon ? `${profileIcon} joined the game` : null;
-      // case ROOM_EVENTS.JOIN_ROOM:
-      // case ROOM_EVENTS.PLAYER_JOINED:
-      //   return `${getUserProfileIcon(activity.actor)} joined the game`;
-      default:
-        return 'Unknown activity';
-    };
-  }
 
   return (
     <div className="w-full h-full px-6 pt-14 md:pt-[88px] pb-24 md:pb-[128px] flex flex-col gap-4 md:gap-8">
-      <ul className="flex gap-4 overflow-x-auto">
-        <li className="bg-slate-800 px-4 py-2 md:py-4 rounded-lg text-white flex flex-col gap-2 flex-none">
-          <p className="text-center text-2xl font-bold">{myProfile?.profileIcon ? PLAYER_ICONS[myProfile.profileIcon] : ''}</p>
-          <div className={
-            classnames(
-              "flex gap-2 relative before:content-['Tap_and_hold_to_view'] before:text-center before:text-xs before:size-full before:bg-gray-600/90 before:rounded before:flex before:items-center before:justify-center before:absolute before:top-1/2 before:left-1/2 before:transform before:-translate-x-1/2 before:-translate-y-1/2",
-            )
-          }>
-            <img src="icons/duke-60.png" className="size-12" />
-            <img src="icons/coup-square-60.png" className="size-12" />
-          </div>
-          <p className="text-center text-xs">3 COINS</p>
-        </li>
-        {otherPlayers.map(user => (
-          <li key={user.id} className="bg-slate-800 px-4 py-2 md:py-4 rounded-lg text-white flex flex-col gap-2 flex-none">
-            <p className="text-center text-2xl font-bold">{PLAYER_ICONS[user.profileIcon]}</p>
-            <div className="flex gap-2 relative">
-              <img src="icons/coup-square-60.png" className="size-12" />
-              <img src="icons/coup-square-60.png" className="size-12" />
-            </div>
-            <p className="text-center text-xs">3 COINS</p>
-          </li>
-        ))}
-        {/* <li className="bg-slate-800 p-4 rounded-lg text-white w-[180px] flex flex-col gap-2 flex-none border-l-8 border-slate-400">
-          <span className="font-bold">💩 (3 COINS)</span>
-          <div className="flex gap-2">
-            <img src="icons/coup-square-60.png" className="size-12" />
-            <img src="icons/coup-square-60.png" className="size-12" />
-          </div>
-        </li> */}
-      </ul>
+      <PlayerOverview />
 
-      <section className="flex gap-4 w-full grow main text-white w-full overflow-y-auto p-4 rounded-lg">
-        <ul>
-          {activities.filter(Boolean).map((activity, index) => (
-            <li key={index} className="font-light">{formatActivity(activity)}</li>
-          ))}
-          {/* <li className="font-light">Game started</li>
-          <li className="font-light">❤️ perform <strong className="font-bold text-[#464867]">assasin</strong> to 💩</li>
-          <li className="font-light">💩 perform <strong className="font-bold text-[#bd8fae]">tax</strong></li>
-          <li className="font-light">😒 perform <strong className="font-bold ">challenge</strong> to 💩</li> */}
-        </ul>
-      </section>
+      <ActivitiesOverview />
 
       {!isGameStarted && (
         <div className="fixed bottom-3 md:bottom-6 left-0 w-full flex gap-2 md:gap-4 px-4 justify-center items-center">
@@ -105,7 +30,7 @@ const Board = ({
             >
               <img src="icons/start.png" className="size-10 md:size-16" />
             </button>
-            <hr width="1" className="h-9 md:h-16 w-px bg-white mx-2 md:mx-4" />
+            <hr className="h-9 md:h-16 w-px bg-white mx-2 md:mx-4" />
           </div>
           <div className="flex gap-2 md:gap-4 items-center overflow-x-scroll">
             {Object.entries(PLAYER_ICONS).map(([key, value]) => (
