@@ -4,7 +4,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { User } from 'src/stores/users';
-import { PlayerJoinedEvent, PlayerLeftEvent, RoomCreatedEvent, RoomJoinedEvent, UserUpdatedEvent } from 'src/constants';
+import { GameStartedEvent, PlayerJoinedEvent, PlayerLeftEvent, RoomCreatedEvent, RoomJoinedEvent, UserUpdatedEvent } from 'src/constants';
 
 
 const app = express();
@@ -26,7 +26,10 @@ app.use(cors({
 
 type Rooms = {
   [roomCode: string]: {
+    isStarted: boolean;
     members: User[];
+    playerOrder?: string[];
+    turn: number;
   };
 };
 
@@ -81,7 +84,9 @@ io.on('connection', (socket) => {
 
     if (!rooms[roomCode]) {
       rooms[roomCode] = {
+        isStarted: false,
         members: [],
+        turn: 1,
       };
     }
 
@@ -126,7 +131,8 @@ io.on('connection', (socket) => {
       if (roomId !== socket.id) {
         roomCode = roomId;
       }
-    })
+    });
+
     console.log(`Updating profile ${socket.id} in room ${roomCode}`);
 
     if (roomCode) {
@@ -168,6 +174,32 @@ io.on('connection', (socket) => {
       }
     }
   });
+
+  socket.on('startGame', () => {
+    let roomCode;
+    socket.rooms.forEach(roomId => {
+      if (roomId !== socket.id) {
+        roomCode = roomId;
+      }
+    });
+
+    console.log(`Starting game in room ${roomCode}`);
+
+    if (roomCode) {
+      // Shuffle the player order
+      const room = rooms[roomCode];
+      room.playerOrder = room.members.map(user => ({ ...user, sort: Math.random() })).sort((a, b) => a.sort - b.sort).map(user => user.id);
+      room.isStarted = true;
+
+      const gameStartedEvent: GameStartedEvent = {
+        eventType: 'GAME_STARTED',
+        isStarted: room.isStarted,
+        playerOrders: room.playerOrder,
+        turn: room.turn,
+      };
+      io.to(roomCode).emit('roomEvent', gameStartedEvent);
+    }
+  })
 
 });
 

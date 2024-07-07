@@ -15,6 +15,8 @@ const App = () => {
   const {
     addActivity,
     roomCode,
+    setIsStarted,
+    setPlayerOrders,
     setRoomCode,
   } = useGameStore();
 
@@ -30,6 +32,10 @@ const App = () => {
     socket.emit('createRoom');
   };
 
+  const broadcastStartGame = () => {
+    socket.emit('startGame');
+  };
+
   const broadcastJoinRoom = (code: string) => {
     socket.emit('joinRoom', code);
   };
@@ -39,7 +45,13 @@ const App = () => {
   }
 
   const handleRoomEvent = useCallback((roomEvent: RoomEvent) => {
+    console.warn(roomEvent);
     switch (roomEvent.eventType) {
+      case ROOM_EVENTS.GAME_STARTED:
+        setIsStarted(roomEvent.isStarted);
+        setPlayerOrders(roomEvent.playerOrders);
+        addActivity(roomEvent);
+        break;
       case ROOM_EVENTS.ROOM_CREATED:
       case ROOM_EVENTS.ROOM_JOINED:
         setRoomCode(roomEvent.roomCode);
@@ -98,7 +110,7 @@ const App = () => {
         )}
 
         {isInRoom && (
-          <Board onChangePlayerIcon={setMyProfileIcon} />
+          <Board onGameStart={broadcastStartGame} onChangePlayerIcon={setMyProfileIcon} />
         )}
       </div>
     </div>

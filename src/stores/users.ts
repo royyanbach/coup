@@ -1,4 +1,4 @@
-import { PlayerIcon } from 'src/constants';
+import { PlayerIcon } from '../constants';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 

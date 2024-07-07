@@ -1,3 +1,4 @@
+import { State as GameState } from "./stores/game";
 import { User } from "./stores/users";
 
 export default {};
@@ -20,12 +21,20 @@ export type PlayerIcon = keyof typeof PLAYER_ICONS;
 export const DEFAULT_PLAYER_ICON = PLAYER_ICONS.ROBOT;
 
 export const ROOM_EVENTS = {
+  GAME_STARTED: 'GAME_STARTED',
   PLAYER_JOINED: 'PLAYER_JOINED',
   PLAYER_LEFT: 'PLAYER_LEFT',
   ROOM_CREATED: 'ROOM_CREATED',
   ROOM_JOINED: 'ROOM_JOINED',
   USER_UPDATED: 'USER_UPDATED',
 } as const;
+
+export type GameStartedEvent = {
+  eventType: typeof ROOM_EVENTS.GAME_STARTED;
+  isStarted: GameState['isStarted'];
+  playerOrders: GameState['playerOrders'];
+  turn: number;
+};
 
 export type RoomCreatedEvent = {
   eventType: typeof ROOM_EVENTS.ROOM_CREATED;
@@ -54,7 +63,8 @@ export type UserUpdatedEvent = {
   user: Partial<User> & Pick<User, 'id'>;
 };
 
-export type RoomEvent = RoomCreatedEvent
+export type RoomEvent = GameStartedEvent
+  | RoomCreatedEvent
   | RoomJoinedEvent
   | PlayerJoinedEvent
   | PlayerLeftEvent

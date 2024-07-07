@@ -19,6 +19,8 @@ const ActivitiesOverview = () => {
   const formatActivity = (activity: RoomEvent) => {
     let profileIcon;
     switch (activity.eventType) {
+      case ROOM_EVENTS.GAME_STARTED:
+        return 'Game started';
       case ROOM_EVENTS.ROOM_CREATED:
         profileIcon = getUserProfileIcon(activity.users[0].id);
         return profileIcon ? `${profileIcon} created a new game` : null;
@@ -35,7 +37,7 @@ const ActivitiesOverview = () => {
 
   return (
     <section className="flex gap-4 w-full grow main text-white w-full overflow-y-auto p-4 rounded-lg">
-      <ul>
+      <ul className="w-full flex flex-col gap-1 md:gap-2">
         {activities.filter(Boolean).map((activity, index) => (
           <li key={index} className="font-light">{formatActivity(activity)}</li>
         ))}
