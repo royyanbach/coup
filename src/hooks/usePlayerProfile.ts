@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { DEFAULT_PLAYER_ICON, EVENT_NAME } from "../constants";
+import { DEFAULT_PLAYER_ICON, ROOM_EVENTS } from "../constants";
 
 const usePlayerProfile = ({
   dataChannels = {},
@@ -49,7 +49,7 @@ const usePlayerProfile = ({
   useEffect(() => {
     if (myProfile) {
       broadCastMessageToAllUsers(JSON.stringify({
-        eventType: EVENT_NAME.UPDATE_USER,
+        eventType: ROOM_EVENTS.UPDATE_USER,
         payload: myProfile,
       }));
     }
